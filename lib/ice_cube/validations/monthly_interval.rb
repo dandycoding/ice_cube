@@ -3,8 +3,8 @@ module IceCube
   module Validations::MonthlyInterval
 
     def interval(interval)
-      @interval = interval
-      replace_validations_for(:interval, [Validation.new(interval)])
+      @interval = normalized_interval(interval)
+      replace_validations_for(:interval, [Validation.new(@interval)])
       clobber_base_validations(:month)
       self
     end
@@ -23,6 +23,10 @@ module IceCube
 
       def build_s(builder)
         builder.base = I18n.t('ice_cube.each_month', count: interval)
+      end
+
+      def dst_adjust?
+        true
       end
 
       def validate(step_time, schedule)

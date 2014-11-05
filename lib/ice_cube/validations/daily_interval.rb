@@ -4,8 +4,8 @@ module IceCube
 
     # Add a new interval validation
     def interval(interval)
-      @interval = interval
-      replace_validations_for(:interval, [Validation.new(interval)])
+      @interval = normalized_interval(interval)
+      replace_validations_for(:interval, [Validation.new(@interval)])
       clobber_base_validations(:wday, :day)
       self
     end
@@ -20,6 +20,10 @@ module IceCube
 
       def type
         :day
+      end
+
+      def dst_adjust?
+        true
       end
 
       def validate(step_time, schedule)

@@ -34,6 +34,10 @@ module IceCube
         builder.piece(:day_of_week) << "#{StringBuilder.nice_number(occ)} #{I18n.t("date.day_names")[day]}"
       end
 
+      def dst_adjust?
+        true
+      end
+
       def validate(step_time, schedule)
         wday = step_time.wday
         offset = (day < wday) ? (7 - wday + day) : (day - wday)

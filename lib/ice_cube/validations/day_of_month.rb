@@ -13,9 +13,7 @@ module IceCube
       self
     end
 
-    class Validation
-
-      include Validations::Lock
+    class Validation < Validations::FixedValue
 
       StringBuilder.register_formatter(:day_of_month) do |entries|
         str = "#{I18n.t("ice_cube.on_the")} #{StringBuilder.sentence(entries)} "
@@ -32,6 +30,10 @@ module IceCube
 
       def type
         :day
+      end
+
+      def dst_adjust?
+        true
       end
 
       def build_s(builder)

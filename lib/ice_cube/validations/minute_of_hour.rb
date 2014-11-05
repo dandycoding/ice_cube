@@ -13,9 +13,7 @@ module IceCube
       self
     end
 
-    class Validation
-
-      include Validations::Lock
+    class Validation < Validations::FixedValue
 
       StringBuilder.register_formatter(:minute_of_hour) do |segments|
         I18n.t("ice_cube.at_minutes_of_hour", count: segments.size, segments: StringBuilder.sentence(segments))
@@ -30,6 +28,10 @@ module IceCube
 
       def type
         :min
+      end
+
+      def dst_adjust?
+        false
       end
 
       def build_s(builder)

@@ -30,8 +30,22 @@ module IceCube
       :interval
     ]
 
+    attr_reader :validations
+
     def initialize(interval = 1, *)
       @validations = Hash.new
+    end
+
+    def base_interval_validation
+      @validations[:interval].first
+    end
+
+    def other_interval_validations
+      Array(@validations[base_interval_validation.type])
+    end
+
+    def base_interval_type
+      base_interval_validation.type
     end
 
     # Compute the next time after (or including) the specified time in respect
@@ -44,6 +58,14 @@ module IceCube
 
       @uses += 1 if @time
       @time
+    end
+
+    def skipped_for_dst
+      @uses -= 1 if @uses > 0
+    end
+
+    def dst_adjust?
+      @validations[:interval].any? &:dst_adjust?
     end
 
     def to_s
@@ -99,6 +121,12 @@ module IceCube
 
     private
 
+    def normalized_interval(interval)
+      int = interval.to_i
+      raise ArgumentError, "'#{interval}' is not a valid input for interval. Please pass an integer." unless int > 0
+      int
+    end
+
     def finds_acceptable_time?
       validation_names.all? do |type|
         validation_accepts_or_updates_time?(@validations[type])
@@ -114,15 +142,11 @@ module IceCube
 
     def validation_accepts_or_updates_time?(validations_for_type)
       res = validated_results(validations_for_type)
-      # If there is any nil, then we're set - otherwise choose the lowest
-      if res.any? { |r| r.nil? || r == 0 }
-        true
-      else
-        return nil if res.all? { |r| r === true } # allow quick escaping
-        res.reject! { |r| r.nil? || r == 0 || r === true }
-        shift_time_by_validation(res, validations_for_type)
-        false
-      end
+      return true if res.any? { |r| r.nil? || r == 0 }
+      return nil if res.all? { |r| r == true }
+      res.reject! { |r| r == true }
+      shift_time_by_validation(res, validations_for_type.first)
+      false
     end
 
     def validated_results(validations_for_type)
@@ -131,13 +155,11 @@ module IceCube
       end
     end
 
-    def shift_time_by_validation(res, vals)
-      return unless res.min
-      type = vals.first.type # get the jump type
-      dst_adjust = !vals.first.respond_to?(:dst_adjust?) || vals.first.dst_adjust?
-      wrapper = TimeUtil::TimeWrapper.new(@time, dst_adjust)
-      wrapper.add(type, res.min)
-      wrapper.clear_below(type)
+    def shift_time_by_validation(res, validation)
+      return unless (interval = res.min)
+      wrapper = TimeUtil::TimeWrapper.new(@time, validation.dst_adjust?)
+      wrapper.add(validation.type, interval)
+      wrapper.clear_below(validation.type)
 
       # Move over DST if blocked, no adjustments
       if wrapper.to_time <= @time
