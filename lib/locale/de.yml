@@ -40,8 +40,8 @@ de:
       ordinals:
         default: .
       literal_ordinals:
-        -1: letzten
-        -2: vorletzten
+        "-1": letzten
+        "-2": vorletzten
     each_week:
       one: wöchentlich
       other: alle %{count} Wochen

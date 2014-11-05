@@ -36,8 +36,8 @@ pt:
       words_connector: ! ', '
     integer:
       literal_ordinals:
-        -1: último
-        -2: penúltimo
+        "-1": último
+        "-2": penúltimo
       ordinals:
         default: o
     each_week:
