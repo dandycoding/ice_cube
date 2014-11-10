@@ -319,7 +319,7 @@ module IceCube
       pieces.concat exrules.map { |t| "#{I18n.t("ice_cube.not")} #{t.to_s}" }
       pieces.concat [I18n.t("ice_cube.not_on") + " " + StringBuilder.sentence( ed.sort.map { |t| I18n.l(t.to_date, format: I18n.t("ice_cube.date.formats.default")) } ) ] unless ed.empty?
       pieces << "#{I18n.t("ice_cube.until", date: I18n.l(end_time.to_date, format: I18n.t("ice_cube.date.formats.default")))}" if end_time
-      pieces.join(I18n.t "ice_cube.array.words_connector")
+      pieces.join("#{I18n.t("ice_cube.array.words_connector")} ")
     end
 
     # Serialize this schedule to_ical

@@ -41,9 +41,9 @@ module IceCube
       # influenced by ActiveSupport's to_sentence
       def sentence(array)
         *enum, final = array
-        enumeration = enum.join(I18n.t 'ice_cube.array.words_connector')
+        enumeration = enum.join("#{I18n.t('ice_cube.array.words_connector')} ")
         enumeration = enumeration.empty? ? nil : enumeration
-        [enumeration, final].compact.join(I18n.t 'ice_cube.array.last_word_connector')
+        [enumeration, final].compact.join(" #{I18n.t('ice_cube.array.last_word_connector')} ")
       end
 
       def nice_number(number)
