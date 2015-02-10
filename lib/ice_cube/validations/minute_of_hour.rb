@@ -13,9 +13,7 @@ module IceCube
       self
     end
 
-    class Validation
-
-      include Validations::Lock
+    class Validation < Validations::FixedValue
 
       attr_reader :minute
       alias :value :minute
@@ -26,6 +24,10 @@ module IceCube
 
       def type
         :min
+      end
+
+      def dst_adjust?
+        false
       end
 
       def build_s(builder)

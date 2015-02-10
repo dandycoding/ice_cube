@@ -16,6 +16,9 @@ module IceCube
   autoload :HashBuilder, 'ice_cube/builders/hash_builder'
   autoload :StringBuilder, 'ice_cube/builders/string_builder'
 
+  autoload :HashParser, 'ice_cube/parsers/hash_parser'
+  autoload :YamlParser, 'ice_cube/parsers/yaml_parser'
+
   autoload :CountExceeded, 'ice_cube/errors/count_exceeded'
   autoload :UntilExceeded, 'ice_cube/errors/until_exceeded'
 
@@ -31,8 +34,7 @@ module IceCube
   autoload :YearlyRule, 'ice_cube/rules/yearly_rule'
 
   module Validations
-
-    autoload :Lock, 'ice_cube/validations/lock'
+    autoload :FixedValue, 'ice_cube/validations/fixed_value'
     autoload :ScheduleLock, 'ice_cube/validations/schedule_lock'
 
     autoload :Count, 'ice_cube/validations/count'
@@ -54,7 +56,6 @@ module IceCube
     autoload :DayOfWeek, 'ice_cube/validations/day_of_week'
     autoload :Day, 'ice_cube/validations/day'
     autoload :DayOfYear, 'ice_cube/validations/day_of_year'
-
   end
 
   # Define some useful constants
@@ -73,5 +74,15 @@ module IceCube
   # Sets the format used by IceCube when printing out Schedule#to_s.
   def self.to_s_time_format=(format)
     @to_s_time_format = format
+  end
+
+  # Retain backwards compatibility for schedules exported from older versions
+  # This represents the version number, 11 = 0.11, 1.0 will be 100
+  def self.compatibility
+    @compatibility ||= 11
+  end
+
+  def self.compatibility=(version)
+    @compatibility = version
   end
 end

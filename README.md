@@ -1,6 +1,7 @@
 # ice_cube - Easy schedule expansion
 
 [![Build Status][travis-ice_cube-png]][travis-ice_cube]
+[![Gem Version](https://badge.fury.io/rb/ice_cube.svg)](http://badge.fury.io/rb/ice_cube)
 
 ```bash
 gem install ice_cube
@@ -35,7 +36,7 @@ schedule.add_recurrence_rule(
 
 ---
 
-With ice_cube, you can specify (in increasing order of precendence):
+With ice_cube, you can specify (in increasing order of precedence):
 
 * Recurrence Rules - Rules on how to include recurring times in a schedule
 * Recurrence Times - To specifically include in a schedule
@@ -44,7 +45,7 @@ With ice_cube, you can specify (in increasing order of precendence):
 Example: Specifying a recurrence with an exception time:
 
 ```ruby
-schedule = Schedule.new(now = Time.now) do |s|
+schedule = IceCube::Schedule.new(now = Time.now) do |s|
   s.add_recurrence_rule(Rule.daily.count(3))
   s.add_exception_time(now + 1.day)
 end
@@ -85,20 +86,20 @@ schedule.previous_occurrences(3, from_time)
 
 
 # or give the schedule a duration and ask if occurring_at?
-schedule = Schedule.new(now, :duration => 3600)
+schedule = IceCube::Schedule.new(now, :duration => 3600)
 schedule.add_recurrence_rule Rule.daily
 schedule.occurring_at?(now + 1800) # true
 schedule.occurring_between?(t1, t2)
 
 # using end_time also sets the duration 
-schedule = Schedule.new(start = Time.now, :end_time => start + 3600)
+schedule = IceCube::Schedule.new(start = Time.now, :end_time => start + 3600)
 schedule.add_recurrence_rule Rule.daily
 schedule.occurring_at?(start + 3599) # true
 schedule.occurring_at?(start + 3600) # false
 
 # take control and use iteration
-schedule = Schedule.new
-schedule.add_recurrence_rule Rule.daily.until(Date.today + 30)
+schedule = IceCube::Schedule.new
+schedule.add_recurrence_rule IceCube::Rule.daily.until(Date.today + 30)
 schedule.each_occurrence { |t| puts t }
 ```
 
@@ -133,13 +134,10 @@ safely) serialize schedule objects in and out of your data store
 
 ``` ruby
 yaml = schedule.to_yaml
-Schedule.from_yaml(yaml)
+IceCube::Schedule.from_yaml(yaml)
 
 hash = schedule.to_hash
-Schedule.from_hash(hash)
-
-Schedule.from_yaml(yaml, :start_date_override => Time.now)
-Schedule.from_hash(hash, :start_date_override => Time.now)
+IceCube::Schedule.from_hash(hash)
 ```
 
 ---
@@ -150,7 +148,7 @@ ice_cube can provide ical or string representations of individual rules, or the
 whole schedule.
 
 ```ruby
-rule = Rule.daily(2).day_of_week(:tuesday => [1, -1], :wednesday => [2])
+rule = IceCube::Rule.daily(2).day_of_week(:tuesday => [1, -1], :wednesday => [2])
 
 rule.to_ical # 'FREQ=DAILY;INTERVAL=2;BYDAY=1TU,-1TU,2WE'
 
@@ -231,7 +229,7 @@ schedule.add_recurrence_rule Rule.yearly(4).day_of_year(-1)
 ### Yearly (by month of year)
 
 ```ruby
-# every year on the same day as start_date but in january and february
+# every year on the same day as start_time but in january and february
 schedule.add_recurrence_rule Rule.yearly.month_of_year(:january, :februrary)
 
 # every third year in march
@@ -251,7 +249,7 @@ schedule.add_recurrence_rule Rule.hourly
 schedule.add_recurrence_rule Rule.hourly(2).day(:monday)
 ```
 
-### Minutely (by minute of hour)
+### Minutely (every N minutes)
 
 ```ruby
 # every 10 minutes
@@ -261,7 +259,7 @@ schedule.add_recurrence_rule Rule.minutely(10)
 schedule.add_recurrence_rule Rule.minutely(90).day_of_week(:tuesday => [-1])
 ```
 
-### Secondly (by second of minute)
+### Secondly (every N seconds)
 
 ```ruby
 # every second

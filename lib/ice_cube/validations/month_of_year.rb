@@ -14,9 +14,7 @@ module IceCube
       self
     end
 
-    class Validation
-
-      include Validations::Lock
+    class Validation < Validations::FixedValue
 
       attr_reader :month
       alias :value :month
@@ -27,6 +25,10 @@ module IceCube
 
       def type
         :month
+      end
+
+      def dst_adjust?
+        true
       end
 
       def build_s(builder)

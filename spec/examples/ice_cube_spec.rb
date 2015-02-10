@@ -11,8 +11,8 @@ describe IceCube::Schedule do
   end
 
   it 'should respond to complex combinations (1)' do
-    start_date = Time.utc(2010, 1, 1)
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.utc(2010, 1, 1)
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.yearly(2).day(:wednesday).month_of_year(:april)
     #check assumptions
     dates = schedule.occurrences(Time.utc(2011, 12, 31)) #two years
@@ -20,7 +20,7 @@ describe IceCube::Schedule do
     dates.each do |date|
       date.wday.should == 3
       date.month.should == 4
-      date.year.should == start_date.year #since we're doing every other
+      date.year.should == start_time.year #since we're doing every other
     end
   end
 
@@ -46,19 +46,19 @@ describe IceCube::Schedule do
   end
 
   it 'should be able to exclude a certain date from a range' do
-    start_date = Time.local 2012, 3, 1
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.local 2012, 3, 1
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily
-    schedule.add_exception_time(start_date + 1 * IceCube::ONE_DAY) # all days except tomorrow
+    schedule.add_exception_time(start_time + 1 * IceCube::ONE_DAY) # all days except tomorrow
     # check assumption
-    dates = schedule.occurrences(start_date + 13 * IceCube::ONE_DAY) # 2 weeks
+    dates = schedule.occurrences(start_time + 13 * IceCube::ONE_DAY) # 2 weeks
     dates.size.should == 13 # 2 weeks minus 1 day
-    dates.should_not include(start_date + 1 * IceCube::ONE_DAY)
+    dates.should_not include(start_time + 1 * IceCube::ONE_DAY)
   end
 
-  it 'make a schedule with a start_date not included in a rule, and make sure that count behaves properly' do
-    start_date = WEDNESDAY
-    schedule = IceCube::Schedule.new(start_date)
+  it 'make a schedule with a start_time not included in a rule, and make sure that count behaves properly' do
+    start_time = WEDNESDAY
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.weekly.day(:thursday).count(5)
     dates = schedule.all_occurrences
     dates.uniq.size.should == 5
@@ -66,9 +66,9 @@ describe IceCube::Schedule do
     dates.should_not include(WEDNESDAY)
   end
 
-  it 'make a schedule with a start_date included in a rule, and make sure that count behaves properly' do
-    start_date = WEDNESDAY + IceCube::ONE_DAY
-    schedule = IceCube::Schedule.new(start_date)
+  it 'make a schedule with a start_time included in a rule, and make sure that count behaves properly' do
+    start_time = WEDNESDAY + IceCube::ONE_DAY
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.weekly.day(:thursday).count(5)
     dates = schedule.all_occurrences
     dates.uniq.size.should == 5
@@ -77,23 +77,23 @@ describe IceCube::Schedule do
   end
 
   it 'should work as expected with a second_of_minute rule specified' do
-    start_date = DAY
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = DAY
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.weekly.second_of_minute(30)
-    dates = schedule.occurrences(start_date + 30 * 60)
+    dates = schedule.occurrences(start_time + 30 * 60)
     dates.each { |date| date.sec.should == 30 }
   end
 
   it 'ensure that when count on a rule is set to 0, 0 occurrences come back' do
-    start_date = DAY
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = DAY
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily.count(0)
     schedule.all_occurrences.should == []
   end
 
   it 'should be able to be schedules at 1:st:st and 2:st:st every day' do
-    start_date = Time.utc(2007, 9, 2, 9, 15, 25)
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.utc(2007, 9, 2, 9, 15, 25)
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily.hour_of_day(1, 2).count(6)
     dates = schedule.all_occurrences
     dates.should == [Time.utc(2007, 9, 3, 1, 15, 25), Time.utc(2007, 9, 3, 2, 15, 25),
@@ -102,8 +102,8 @@ describe IceCube::Schedule do
   end
 
   it 'should be able to be schedules at 1:0:st and 2:0:st every day' do
-    start_date = Time.utc(2007, 9, 2, 9, 15, 25)
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.utc(2007, 9, 2, 9, 15, 25)
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily.hour_of_day(1, 2).minute_of_hour(0).count(6)
     dates = schedule.all_occurrences
     dates.should == [Time.utc(2007, 9, 3, 1, 0, 25), Time.utc(2007, 9, 3, 2, 0, 25),
@@ -112,67 +112,67 @@ describe IceCube::Schedule do
   end
 
   it 'will only return count# if you specify a count and use .first' do
-    start_date = Time.now
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.now
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily.count(10)
     dates = schedule.first(200)
     dates.size.should == 10
   end
 
   it 'occurs yearly' do
-    start_date = DAY
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = DAY
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.yearly
     dates = schedule.first(10)
     dates.each do |date|
-      date.month.should == start_date.month
-      date.day.should == start_date.day
-      date.hour.should == start_date.hour
-      date.min.should == start_date.min
-      date.sec.should == start_date.sec
+      date.month.should == start_time.month
+      date.day.should == start_time.day
+      date.hour.should == start_time.hour
+      date.min.should == start_time.min
+      date.sec.should == start_time.sec
     end
   end
 
   it 'occurs daily' do
-    start_date = Time.now
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.now
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily
     dates = schedule.first(10)
     dates.each do |date|
-      date.hour.should == start_date.hour
-      date.min.should == start_date.min
-      date.sec.should == start_date.sec
+      date.hour.should == start_time.hour
+      date.min.should == start_time.min
+      date.sec.should == start_time.sec
     end
   end
 
   it 'occurs hourly' do
-    start_date = Time.now
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.now
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.hourly
     dates = schedule.first(10)
     dates.each do |date|
-      date.min.should == start_date.min
-      date.sec.should == start_date.sec
+      date.min.should == start_time.min
+      date.sec.should == start_time.sec
     end
   end
 
   it 'occurs minutely' do
-    start_date = Time.now
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.now
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.minutely
     dates = schedule.first(10)
     dates.each do |date|
-      date.sec.should == start_date.sec
+      date.sec.should == start_time.sec
     end
   end
 
   it 'occurs every second for an hour' do
-    start_date = Time.now
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.now
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.secondly.count(60)
     # build the expectation list
     expectation = []
-    0.upto(59) { |i| expectation << start_date + i }
+    0.upto(59) { |i| expectation << start_time + i }
     # compare with what we get
     dates = schedule.all_occurrences
     dates.size.should == 60
@@ -181,8 +181,8 @@ describe IceCube::Schedule do
 
   it 'perform a every day LOCAL and make sure we get back LOCAL' do
     Time.zone = 'Eastern Time (US & Canada)'
-    start_date = Time.zone.local(2010, 9, 2, 5, 0, 0)
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.zone.local(2010, 9, 2, 5, 0, 0)
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily
     schedule.first(10).each do |d|
       d.utc?.should == false
@@ -192,8 +192,8 @@ describe IceCube::Schedule do
   end
 
   it 'perform a every day LOCAL and make sure we get back LOCAL' do
-    start_date = Time.utc(2010, 9, 2, 5, 0, 0)
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.utc(2010, 9, 2, 5, 0, 0)
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily
     schedule.first(10).each do |d|
       d.utc?.should == true
@@ -206,8 +206,8 @@ describe IceCube::Schedule do
   # verify ice_cube is properly checking until bounds
   it 'works with a until date that is UTC, but the start date is local' do
     Time.zone = 'Eastern Time (US & Canada)'
-    start_date = Time.zone.local(2010, 11, 6, 5, 0, 0)
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.zone.local(2010, 11, 6, 5, 0, 0)
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily.until(Time.utc(2010, 11, 10, 8, 0, 0)) #4 o clocal local
     #check assumptions
     dates = schedule.all_occurrences
@@ -220,9 +220,9 @@ describe IceCube::Schedule do
   # here we purposely put a local time that is before the range ends, to
   # verify ice_cube is properly checking until bounds
   it 'works with a until date that is local, but the start date is UTC' do
-    start_date = Time.utc(2010, 11, 6, 5, 0, 0)
+    start_time = Time.utc(2010, 11, 6, 5, 0, 0)
     Time.zone = 'Eastern Time (US & Canada)'
-    schedule = IceCube::Schedule.new(start_date)
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.daily.until(Time.zone.local(2010, 11, 9, 23, 0, 0)) #4 o UTC time
     #check assumptions
     dates = schedule.all_occurrences
@@ -233,8 +233,8 @@ describe IceCube::Schedule do
   end
 
   it 'works with a monthly rule iterating on UTC' do
-    start_date = Time.utc(2010, 4, 24, 15, 45, 0)
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = Time.utc(2010, 4, 24, 15, 45, 0)
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.monthly
     dates = schedule.first(10)
     dates.each do |d|
@@ -252,14 +252,6 @@ describe IceCube::Schedule do
     rules.each { |r| schedule.add_recurrence_rule(r) }
     # pull the rules back out of the schedule and compare
     schedule.rrules.should == rules
-  end
-
-  it 'can retrieve exrules from a schedule' do
-    schedule = IceCube::Schedule.new(Time.now)
-    rules = [IceCube::Rule.daily, IceCube::Rule.monthly, IceCube::Rule.yearly]
-    rules.each { |r| schedule.add_exception_rule(r) }
-    # pull the rules back out of the schedule and compare
-    schedule.exrules.should == rules
   end
 
   it 'can retrieve recurrence times from a schedule' do
@@ -316,31 +308,41 @@ describe IceCube::Schedule do
     dates.should == [start_time + IceCube::ONE_DAY * 2, start_time + IceCube::ONE_DAY * 3, start_time + IceCube::ONE_DAY * 4]
   end
 
-  it 'should use start date on a bi-weekly recurrence pattern to find the occurrences_between when interval > 1' do
-    start_date = Time.local(2011, 3, 20)
+  describe "using occurs_between with a biweekly schedule" do
+    [[0, 1, 2], [0, 6, 1], [5, 1, 6], [6, 5, 7]].each do |wday, offset, lead|
+      start_week    = Time.utc(2014, 1, 5)
+      expected_week =  start_week + 2.weeks
+      offset_wday   = (wday + offset) % 7
 
-    schedule = IceCube::Schedule.new(start_date)
-    schedule.add_recurrence_rule IceCube::Rule.weekly(2).day(:sunday)
+      context "starting on weekday #{wday} selecting weekday #{offset} with a #{lead} day advance window" do
+        let(:biweekly)      { Rule.weekly(2).day(0, 1, 2, 3, 4, 5, 6) }
+        let(:schedule)      { Schedule.new(start_week + wday.days) { |s| s.rrule biweekly } }
+        let(:expected_date) { expected_week + offset_wday.days }
+        let(:range)         { [expected_date - lead.days, expected_date] }
 
-    occurrences = schedule.occurrences_between(Time.local(2012, 7, 7), Time.local(2012, 7, 9))
-    occurrences.should == [Time.local(2012, 7, 8)]
+        it "should include weekday #{offset_wday} of the expected week" do
+          expect(schedule.occurrences_between(range.first, range.last)).to include expected_date
+        end
+      end
+
+    end
   end
 
   it 'should be able to tell us when there is at least one occurrence between two dates' do
-    start_date = WEDNESDAY
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = WEDNESDAY
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.weekly.day(:friday)
-    true.should == schedule.occurs_between?(start_date, start_date + IceCube::ONE_DAY * 3)
+    true.should == schedule.occurs_between?(start_time, start_time + IceCube::ONE_DAY * 3)
   end
 
   it 'should be able to tell us when there is no occurrence between two dates' do
-    start_date = WEDNESDAY
-    schedule = IceCube::Schedule.new(start_date)
+    start_time = WEDNESDAY
+    schedule = IceCube::Schedule.new(start_time)
     schedule.add_recurrence_rule IceCube::Rule.weekly.day(:friday)
-    false.should == schedule.occurs_between?(start_date, start_date + IceCube::ONE_DAY)
+    false.should == schedule.occurs_between?(start_time, start_time + IceCube::ONE_DAY)
   end
 
-  it 'should be able to get back rdates from a schedule' do
+  it 'should be able to get back rtimes from a schedule' do
     schedule = IceCube::Schedule.new DAY
     schedule.add_recurrence_time DAY
     schedule.add_recurrence_time(DAY + 2)
@@ -567,14 +569,6 @@ describe IceCube::Schedule do
     schedule.rrules.should == [daily, monthly]
   end
 
-  it 'should have some convenient alias for exrules' do
-    schedule = IceCube::Schedule.new(Time.now)
-    daily = IceCube::Rule.daily; monthly = IceCube::Rule.monthly
-    schedule.add_exception_rule daily
-    schedule.exrule monthly
-    schedule.exrules.should == [daily, monthly]
-  end
-
   it 'should have some convenient alias for recurrence_times' do
     schedule = IceCube::Schedule.new(Time.now)
     schedule.add_recurrence_time Time.local(2010, 8, 13)
@@ -589,14 +583,6 @@ describe IceCube::Schedule do
     schedule.extimes.should == [Time.local(2010, 8, 13), Time.local(2010, 8, 14)]
   end
 
-  it 'should be able to have a rule and an exrule' do
-    schedule = IceCube::Schedule.new(Time.local(2010, 8, 27, 10))
-    schedule.rrule IceCube::Rule.daily
-    schedule.exrule IceCube::Rule.daily.day(:friday)
-    schedule.occurs_on?(Date.new(2010, 8, 27)).should be_false
-    schedule.occurs_on?(Date.new(2010, 8, 28)).should be_true
-  end
-
   it 'should always generate the correct number of days for .first' do
     s = IceCube::Schedule.new(Time.zone.parse('1-1-1985'))
     r = IceCube::Rule.weekly(3).day(:monday, :wednesday, :friday)
@@ -605,36 +591,6 @@ describe IceCube::Schedule do
     s.first(3).size.should == 3
     s.first(4).size.should == 4
     s.first(5).size.should == 5
-  end
-
-
-
-  it 'should always generate the date based off the start_date_override when specified in from_yaml' do
-    start_date = DAY # zero seconds
-    schedule = IceCube::Schedule.new(start_date)
-    schedule.add_recurrence_rule IceCube::Rule.minutely
-
-    start_date_override = DAY + 20
-
-    schedule2 = IceCube::Schedule.from_yaml(schedule.to_yaml, :start_date_override => start_date_override)
-    dates = schedule2.first(10)
-    dates.each do |date|
-      date.sec.should == start_date_override.sec
-    end
-  end
-
-  it 'should always generate the date based off the start_date_override when specified in from_hash' do
-    start_date = DAY # zero seconds
-    schedule = IceCube::Schedule.new(start_date)
-    schedule.add_recurrence_rule IceCube::Rule.minutely
-
-    start_date_override = DAY + 20
-
-    schedule2 = IceCube::Schedule.from_hash(schedule.to_hash, :start_date_override => start_date_override)
-    dates = schedule2.first(10)
-    dates.each do |date|
-      date.sec.should == start_date_override.sec
-    end
   end
 
   it 'should use current date as start date when invoked with a nil parameter' do
@@ -649,9 +605,16 @@ describe IceCube::Schedule do
 
   it 'should be able to remove a count validation from a rule' do
     rule = IceCube::Rule.daily.count(5)
-    rule.count nil
-    rule.to_hash.should_not have_key(:count)
+    rule.occurrence_count.should == 5
+    rule.count(nil)
     rule.occurrence_count.should be_nil
+  end
+
+  it 'should be able to remove a count validation from a rule' do
+    rule = IceCube::Rule.daily.count(5)
+    rule.to_hash[:count].should == 5
+    rule.count nil
+    rule.to_hash[:count].should be_nil
   end
 
   it 'should be able to remove an until validation from a rule' do
@@ -661,28 +624,34 @@ describe IceCube::Schedule do
     rule.to_hash.should_not have_key(:until)
   end
 
-  # Full required for rules account for @interval
-
-  %w{Secondly Minutely Hourly Daily Weekly Monthly Yearly}.each do |t|
-
-    klass = eval "IceCube::#{t}Rule"
-    method = t.downcase.to_sym
-
-    describe klass do
-      describe :full_required? do
-
-        it 'should return true when interval is > 1' do
-          rule = IceCube::Rule.send(method, 2)
-          rule.full_required?.should be_true
-        end
-
-        it 'should return false when interval is <= 1' do
-          rule = IceCube::Rule.send(method)
-          rule.full_required?.should be_false
-        end
-
+  it 'should not have ridiculous load times for minutely on next_occurrence (from sidetiq)' do
+    quick_attempt_test do
+      IceCube::Schedule.new(Time.utc(2010, 1, 1)) do |s|
+        s.add_recurrence_rule(IceCube::Rule.minutely(1800))
       end
     end
+  end
+
+  it 'should not have ridiculous load times for every 10 on next_occurrence #210' do
+    quick_attempt_test do
+      IceCube::Schedule.new(Time.utc(2010, 1, 1)) do |s|
+        s.add_recurrence_rule(IceCube::Rule.hourly.minute_of_hour(0, 10, 20, 30, 40, 50))
+      end
+    end
+    quick_attempt_test do
+      IceCube::Schedule.new(Time.utc(2010, 1, 1)) do |s|
+        s.add_recurrence_rule(IceCube::Rule.daily)
+      end
+    end
+  end
+
+  def quick_attempt_test
+    time = Time.now
+    10.times do
+      (yield).next_occurrence(Time.now)
+    end
+    total = Time.now - time
+    total.should be < 0.1
   end
 
 end

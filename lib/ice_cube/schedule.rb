@@ -145,60 +145,79 @@ module IceCube
     # Get all of the occurrences from the start_time up until a
     # given Time
     def occurrences(closing_time)
-      find_occurrences(start_time, closing_time)
+      enumerate_occurrences(start_time, closing_time).to_a
     end
 
     # All of the occurrences
     def all_occurrences
       require_terminating_rules
-      find_occurrences(start_time)
+      enumerate_occurrences(start_time).to_a
+    end
+
+    # Emit an enumerator based on the start time
+    def all_occurrences_enumerator
+      enumerate_occurrences(start_time)
     end
 
     # Iterate forever
     def each_occurrence(&block)
-      find_occurrences(start_time, &block)
+      enumerate_occurrences(start_time, &block).to_a
       self
     end
 
     # The next n occurrences after now
     def next_occurrences(num, from = nil)
-      from ||= TimeUtil.now(@start_time)
-      find_occurrences(from + 1, nil, num)
+      from = TimeUtil.match_zone(from, start_time) || TimeUtil.now(start_time)
+      enumerate_occurrences(from + 1, nil).take(num)
     end
 
     # The next occurrence after now (overridable)
     def next_occurrence(from = nil)
-      from ||= TimeUtil.now(@start_time)
-      find_occurrences(from + 1, nil, 1).first
+      from = TimeUtil.match_zone(from, start_time) || TimeUtil.now(start_time)
+      enumerate_occurrences(from + 1, nil).next
+    rescue StopIteration
+      nil
     end
 
     # The previous occurrence from a given time
     def previous_occurrence(from)
+      from = TimeUtil.match_zone(from, start_time) or raise ArgumentError, "Time required, got #{time.inspect}"
       return nil if from <= start_time
-      find_occurrences(start_time, from - 1, nil, 1).last
+      enumerate_occurrences(start_time, from - 1).to_a.last
     end
 
     # The previous n occurrences before a given time
     def previous_occurrences(num, from)
+      from = TimeUtil.match_zone(from, start_time) or raise ArgumentError, "Time required, got #{time.inspect}"
       return [] if from <= start_time
-      find_occurrences(start_time, from - 1, nil, num)
+      a = enumerate_occurrences(start_time, from - 1).to_a
+      a.size > num ? a[-1*num,a.size] : a
     end
 
     # The remaining occurrences (same requirements as all_occurrences)
     def remaining_occurrences(from = nil)
       require_terminating_rules
       from ||= TimeUtil.now(@start_time)
-      find_occurrences(from)
+      enumerate_occurrences(from).to_a
+    end
+
+    # Returns an enumerator for all remaining occurrences
+    def remaining_occurrences_enumerator(from = nil)
+      from ||= TimeUtil.now(@start_time)
+      enumerate_occurrences(from)
     end
 
     # Occurrences between two times
     def occurrences_between(begin_time, closing_time)
-      find_occurrences(begin_time, closing_time)
+      enumerate_occurrences(begin_time, closing_time).to_a
     end
 
     # Return a boolean indicating if an occurrence falls between two times
     def occurs_between?(begin_time, closing_time)
-      !find_occurrences(begin_time, closing_time, 1).empty?
+      enumerate_occurrences(begin_time, closing_time).next
+      true
+    rescue StopIteration
+      false
     end
 
     # Return a boolean indicating if an occurrence is occurring between two
@@ -214,7 +233,7 @@ module IceCube
 
     # Return a boolean indicating if an occurrence falls on a certain date
     def occurs_on?(date)
-      date = TimeUtil.ensure_date date
+      date = TimeUtil.ensure_date(date)
       begin_time = TimeUtil.beginning_of_date(date, start_time)
       closing_time = TimeUtil.end_of_date(date, start_time)
       occurs_between?(begin_time, closing_time)
@@ -222,6 +241,7 @@ module IceCube
 
     # Determine if the schedule is occurring at a given time
     def occurring_at?(time)
+      time = TimeUtil.match_zone(time, start_time) or raise ArgumentError, "Time required, got #{time.inspect}"
       if duration > 0
         return false if exception_time?(time)
         occurs_between?(time - duration + 1, time)
@@ -235,7 +255,7 @@ module IceCube
     # @param [Time] closing_time - the last time to consider
     # @return [Boolean] whether or not the schedules conflict at all
     def conflicts_with?(other_schedule, closing_time = nil)
-      closing_time = TimeUtil.ensure_time closing_time
+      closing_time = TimeUtil.ensure_time(closing_time)
       unless terminating? || other_schedule.terminating? || closing_time
         raise ArgumentError, "One or both schedules must be terminating to use #conflicts_with?"
       end
@@ -247,6 +267,7 @@ module IceCube
       end
       # Go through each occurrence of the terminating schedule and determine
       # if the other occurs at that time
+      #
       last_time = nil
       terminating_schedule.each_occurrence do |time|
         if closing_time && time > closing_time
@@ -276,7 +297,7 @@ module IceCube
 
     # Get the first n occurrences, or the first occurrence if n is skipped
     def first(n = nil)
-      occurrences = find_occurrences start_time, nil, n || 1
+      occurrences = enumerate_occurrences(start_time).take(n || 1)
       n.nil? ? occurrences.first : occurrences
     end
 
@@ -284,7 +305,7 @@ module IceCube
     # or the final one if no n is given
     def last(n = nil)
       require_terminating_rules
-      occurrences = find_occurrences(start_time, nil, nil, n || 1)
+      occurrences = enumerate_occurrences(start_time).to_a
       n.nil? ? occurrences.last : occurrences[-n..-1]
     end
 
@@ -318,20 +339,22 @@ module IceCube
 
     # Load the schedule from yaml
     def self.from_yaml(yaml, options = {})
-      hash = YAML::load(yaml)
-      if match = yaml.match(/start_date: .+((?:-|\+)\d{2}:\d{2})$/)
-        TimeUtil.restore_deserialized_offset(hash[:start_date], match[1])
+      YamlParser.new(yaml).to_schedule do |schedule|
+        Deprecated.schedule_options(schedule, options)
+        yield schedule if block_given?
       end
-      from_hash hash, options
     end
 
     # Convert the schedule to a hash
     def to_hash
       data = {}
-      data[:start_date] = TimeUtil.serialize_time(start_time)
+      data[:start_time] = TimeUtil.serialize_time(start_time)
+      data[:start_date] = data[:start_time] if IceCube.compatibility <= 11
       data[:end_time] = TimeUtil.serialize_time(end_time) if end_time
       data[:rrules] = recurrence_rules.map(&:to_hash)
-      data[:exrules] = exception_rules.map(&:to_hash)
+      if IceCube.compatibility <= 11 && exception_rules.any?
+        data[:exrules] = exception_rules.map(&:to_hash)
+      end
       data[:rtimes] = recurrence_times.map do |rt|
         TimeUtil.serialize_time(rt)
       end
@@ -343,28 +366,10 @@ module IceCube
 
     # Load the schedule from a hash
     def self.from_hash(original_hash, options = {})
-      original_hash[:start_date] = options[:start_date_override] if options[:start_date_override]
-      # And then deserialize
-      data = IceCube::FlexibleHash.new(original_hash)
-      schedule = IceCube::Schedule.new TimeUtil.deserialize_time(data[:start_date])
-      schedule.end_time = schedule.start_time + data[:duration] if data[:duration]
-      schedule.end_time = TimeUtil.deserialize_time(data[:end_time]) if data[:end_time]
-      data[:rrules] && data[:rrules].each { |h| schedule.rrule(IceCube::Rule.from_hash(h)) }
-      data[:exrules] && data[:exrules].each { |h| schedule.exrule(IceCube::Rule.from_hash(h)) }
-      data[:rtimes] && data[:rtimes].each do |t|
-        schedule.add_recurrence_time TimeUtil.deserialize_time(t)
+      HashParser.new(original_hash).to_schedule do |schedule|
+        Deprecated.schedule_options(schedule, options)
+        yield schedule if block_given?
       end
-      data[:extimes] && data[:extimes].each do |t|
-        schedule.add_exception_time TimeUtil.deserialize_time(t)
-      end
-      # Also serialize old format for backward compat
-      data[:rdates] && data[:rdates].each do |t|
-        schedule.add_recurrence_time TimeUtil.deserialize_time(t)
-      end
-      data[:exdates] && data[:exdates].each do |t|
-        schedule.add_exception_time TimeUtil.deserialize_time(t)
-      end
-      schedule
     end
 
     # Determine if the schedule will end
@@ -374,11 +379,13 @@ module IceCube
     end
 
     def self.dump(schedule)
+      return schedule if schedule.nil? || schedule == ""
       schedule.to_yaml
     end
 
     def self.load(yaml)
-      from_yaml(yaml) unless yaml.nil? || yaml.empty?
+      return yaml if yaml.nil? || yaml == ""
+      from_yaml(yaml)
     end
 
     private
@@ -391,30 +398,29 @@ module IceCube
 
     # Find all of the occurrences for the schedule between opening_time
     # and closing_time
-    def find_occurrences(opening_time, closing_time = nil, limit = nil, tail_limit = nil, &block)
-      opening_time = TimeUtil.ensure_time opening_time
-      closing_time = TimeUtil.ensure_time closing_time
+    # Iteration is unrolled in pairs to skip duplicate times in end of DST
+    def enumerate_occurrences(opening_time, closing_time = nil, &block)
+      opening_time = TimeUtil.match_zone(opening_time, start_time)
+      closing_time = TimeUtil.match_zone(closing_time, start_time)
       opening_time += start_time.subsec - opening_time.subsec rescue 0
-      reset
-      answers = []
       opening_time = start_time if opening_time < start_time
-      # walk up to the opening time - and off we go
-      # If we have rules with counts, we need to walk from the beginning of time,
-      # otherwise opening_time
-      time = full_required? ? start_time : opening_time
-      loop do
-        res = next_time(time, closing_time)
-        break unless res
-        break if closing_time && res > closing_time
-        if res >= opening_time
-          block_given? ? block.call(res) : (answers << res)
-          answers.shift if tail_limit && answers.length > tail_limit
-          break if limit && answers.length == limit
+      Enumerator.new do |yielder|
+        reset
+        t1 = full_required? ? start_time : realign(opening_time)
+        loop do
+          break unless (t0 = next_time(t1, closing_time))
+          break if closing_time && t0 > closing_time
+          yielder << (block_given? ? block.call(t0) : t0) if t0 >= opening_time
+          break unless (t1 = next_time(t0 + 1, closing_time))
+          break if closing_time && t1 > closing_time
+          if TimeUtil.same_clock?(t0, t1) && recurrence_rules.any?(&:dst_adjust?)
+            wind_back_dst
+            next (t1 += 1)
+          end
+          yielder << (block_given? ? block.call(t1) : t1) if t1 >= opening_time
+          next (t1 += 1)
         end
-        time = res + 1
       end
-      # and return our answers
-      answers
     end
 
     # Get the next time after (or including) a specific time
@@ -424,17 +430,18 @@ module IceCube
           begin
             new_time = rule.next_time(time, self, min_time || closing_time)
             [min_time, new_time].compact.min
-          rescue CountExceeded, UntilExceeded
+          rescue StopIteration
             min_time
           end
         end
         break nil unless min_time
-        next(time = min_time + 1) if exception_time?(min_time)
+        next (time = min_time + 1) if exception_time?(min_time)
         break Occurrence.new(min_time, min_time + duration)
       end
     end
 
-    # Return a boolean indicating if any rule needs to be run from the start of time
+    # Indicate if any rule needs to be run from the start of time
+    # If we have rules with counts, we need to walk from the beginning of time
     def full_required?
       @all_recurrence_rules.any?(&:full_required?) ||
       @all_exception_rules.any?(&:full_required?)
@@ -476,6 +483,34 @@ module IceCube
       else
         @all_recurrence_rules
       end
+    end
+
+    def wind_back_dst
+      recurrence_rules.each do |rule|
+        rule.skipped_for_dst
+      end
+    end
+
+    # If any rule has validations for values within the period, (overriding the
+    # interval from start time, e.g.  `day[_of_week]`), and the opening time is
+    # offset from the interval multiplier such that it might miss the first
+    # correct occurrence (e.g. repeat is every N weeks, but selecting from end
+    # of week N-1, the first jump would go to end of week N and miss any
+    # earlier validations in the week). This realigns the opening time to
+    # the start of the interval's correct period (e.g. move to start of week N)
+    # TODO: check if this is needed for validations other than `:wday`
+    #
+    def realign(opening_time)
+      time = TimeUtil::TimeWrapper.new(opening_time)
+      recurrence_rules.each do |rule|
+        wday_validations = rule.other_interval_validations.select { |v| v.type == :wday } or next
+        interval = rule.base_interval_validation.validate(opening_time, self).to_i
+        offset = wday_validations
+          .map { |v| v.validate(opening_time, self).to_i }
+          .reduce(0) { |least, i| i > 0 && i <= interval && (i < least || least == 0) ? i : least }
+        time.add(rule.base_interval_type, 7 - time.to_time.wday) if offset > 0
+      end
+      time.to_time
     end
 
   end

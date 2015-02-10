@@ -28,9 +28,11 @@ describe Occurrence do
     end
 
     it "accepts a format option to comply with ActiveSupport" do
-      occurrence = Occurrence.new(Time.now)
+      require 'active_support/core_ext/time'
+      time_now = Time.current
+      occurrence = Occurrence.new(time_now)
 
-      expect { occurrence.to_s(:short) }.not_to raise_error
+      expect(occurrence.to_s(:short)).to eq time_now.to_s(:short)
     end
   end
 
@@ -112,6 +114,11 @@ describe Occurrence do
       occurrence.overnight?.should be_false
     end
 
+    it 'is false for a zero-length occurrence on the last day of a month' do
+      occurrence = Occurrence.new(Time.local(2013, 3, 31))
+      occurrence.overnight?.should be_false
+    end
+
     it 'is false for a duration within a single day' do
       t0 = Time.local(2013, 2, 24, 8, 0, 0)
       occurrence = Occurrence.new(t0, t0 + 3600)
@@ -120,6 +127,12 @@ describe Occurrence do
 
     it 'is false for a duration that starts at midnight' do
       t0 = Time.local(2013, 2, 24, 0, 0, 0)
+      occurrence = Occurrence.new(t0, t0 + 3600)
+      occurrence.overnight?.should be_false
+    end
+
+    it 'is false for a duration that starts at midnight on the last day of a month' do
+      t0 = Time.local(2013, 3, 31, 0, 0, 0)
       occurrence = Occurrence.new(t0, t0 + 3600)
       occurrence.overnight?.should be_false
     end
@@ -135,7 +148,12 @@ describe Occurrence do
       occurrence = Occurrence.new(t0, t0 + 3601)
       occurrence.overnight?.should be_true
     end
+
+    it 'is true for a duration that crosses midnight on the last day of a month' do
+      t0 = Time.local(2013, 3, 31, 23, 0, 0)
+      occurrence = Occurrence.new(t0, t0 + 3601)
+      occurrence.overnight?.should be_true
+    end
   end
 
 end
-
